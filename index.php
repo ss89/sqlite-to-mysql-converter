@@ -17,11 +17,12 @@ class mysql_database {
     function __construct($host,$user,$pass,$dbname)
     {
         $this->handle=mysqli_connect($host,$user,$pass);
+        mysqli_query($this->handle,"SET NAMES UTF8");
         $this->dbname=$dbname;
     }
     function create()
     {
-        return mysqli_query($this->handle,"CREATE DATABASE ".$this->dbname);
+        return mysqli_query($this->handle,"CREATE DATABASE ".$this->dbname." DEFAULT CHARACTER SET UTF8");
     }
     function drop()
     {
@@ -39,6 +40,11 @@ class mysql_database {
     {
         return mysqli_error($this->handle);
     }
+    function escape($what)
+    {
+        return mysqli_real_escape_string($this->handle,$what);
+    }
+
 }
 class sqlite_database{
     private $handle;
@@ -170,6 +176,54 @@ class mysql_table{
         return $table;
     }
 }
+class table
+{
+    private $name;
+    private $rows=array();
+    private $db1;
+    private $db2;
+    function __construct($name, sqlite_database $db1=null, mysql_database $db2=null)
+    {
+        //expecting db1 to be sqlite_database
+        //expecting db2 to be mysql_database
+        $this->name=$name;
+        $this->db1=$db1;
+        $this->db2=$db2;
+    }
+    function migrateToMySQL()
+    {
+        $query="SELECT * FROM ".$this->name;
+        $result=$this->db1->execute($query);
+        $rowCounter=0;
+        while($row=$this->db1->result->fetchArray(SQLITE3_ASSOC))
+        {
+            $rowCounter++;
+            $query="INSERT INTO `".$this->name."` (";
+            $cols=array();
+            $contents=array();
+            foreach($row as $col => $content)
+            {
+                array_push($cols,"`".$col."`");
+                if(is_integer($content))
+                {
+                }
+                else
+                {
+                    $content="'".$this->db2->escape($content)."'";
+                }
+                array_push($contents,$content);
+            }
+            $query.=implode(",",$cols).") VALUES (";
+            $query.=implode(",",$contents).");";
+            if(!$this->db2->execute($query))
+            {
+                die("error executing last query: ".$query."<br>mysql returned: ".$this->db2->lastError());
+            }
+        }
+        return $rowCounter;
+    }
+}
+header("Content-Type: text/html; charset=UTF-8");
 $sqlite=new sqlite_database($filename);
 if($sqlite)
 {
@@ -221,6 +275,12 @@ if($sqlite)
                 if($create)
                 {
                     echo "table ".$tablename." created<br>";
+                    $table=new table($tablename,$sqlite,$mysql);
+                    $migrated=$table->migrateToMySQL();
+                    if($migrated || is_numeric($migrated))
+                    {
+                        echo "table ".$tablename." migrated (".$migrated." Rows)<br>";
+                    }
                 }
                 else
                 {
