@@ -5,12 +5,20 @@
  * Date: 10.03.14
  * Time: 20:52
  */
-$filename="/Users/strussi/Desktop/owncloud.db";
+$filename="/Users/sebastian/Desktop/owncloud.db";
 $host="127.0.0.1";
 $user="root";
 $pass="mysql";
 $dbname="owncloud";
 $sqls=array();
+if(stristr(PHP_SAPI,"CLI")!==FALSE)
+{
+    define("nl",chr(13).chr(10));
+}
+else
+{
+    define("nl","<br>");
+}
 class mysql_database {
     private $handle;
     private $dbname;
@@ -217,7 +225,7 @@ class table
             $query.=implode(",",$contents).");";
             if(!$this->db2->execute($query))
             {
-                die("error executing last query: ".$query."<br>mysql returned: ".$this->db2->lastError());
+                die("error executing last query: ".$query.nl."mysql returned: ".$this->db2->lastError());
             }
         }
         return $rowCounter;
@@ -227,7 +235,7 @@ header("Content-Type: text/html; charset=UTF-8");
 $sqlite=new sqlite_database($filename);
 if($sqlite)
 {
-    echo "connected to sqlite db<br>";
+    echo "connected to sqlite db".nl;
     $query="SELECT * FROM sqlite_master WHERE type='table'";
     $result=$sqlite->execute($query);
     $tables=array();
@@ -243,11 +251,11 @@ if($sqlite)
     $mysql=new mysql_database($host,$user,$pass,$dbname);
     if($mysql)
     {
-        echo "connected to mysql<br>";
+        echo "connected to mysql".nl;
         $drop=$mysql->drop();
         if($drop)
         {
-            echo "dropped mysql database<br>";
+            echo "dropped mysql database".nl;
         }
         else
         {
@@ -256,7 +264,7 @@ if($sqlite)
         $create=$mysql->create();
         if($create)
         {
-            echo "created database<br>";
+            echo "created database".nl;
         }
         else
         {
@@ -265,7 +273,7 @@ if($sqlite)
         $select=$mysql->select();
         if($select)
         {
-            echo "target database selected<br>";
+            echo "target database selected".nl;
             foreach($tables as $tablename)
             {
                 $description=$sqlite->describe($tablename);
@@ -274,12 +282,12 @@ if($sqlite)
                 $create=$mysql->execute($createTable);
                 if($create)
                 {
-                    echo "table ".$tablename." created<br>";
+                    echo "table ".$tablename." created".nl;
                     $table=new table($tablename,$sqlite,$mysql);
                     $migrated=$table->migrateToMySQL();
                     if($migrated || is_numeric($migrated))
                     {
-                        echo "table ".$tablename." migrated (".$migrated." Rows)<br>";
+                        echo "table ".$tablename." migrated (".$migrated." Rows)".nl;
                     }
                 }
                 else
