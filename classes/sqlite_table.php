@@ -18,6 +18,16 @@ class sqlite_table {
         $this->db1=$db1;
         $this->db2=$db2;
     }
+    function num_rows()
+    {
+        $query="SELECT count(*) as count FROM `".$this->name."`";
+        if(!$result=$this->db1->execute($query))
+        {
+            die("error selecting rows from '".$this->name."'".nl);
+        }
+        $row=$this->db1->result->fetchArray(SQLITE3_ASSOC);
+        return (int)$row['count'];
+    }
     function migrateToMySQL()
     {
         $query="SELECT * FROM ".$this->name;

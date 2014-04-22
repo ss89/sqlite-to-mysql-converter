@@ -10,6 +10,7 @@ $host="127.0.0.1";
 $user="root";
 $pass="mysql";
 $dbname="owncloud";
+$port=3306;
 $sqls=array();
 if(stristr(PHP_SAPI,"CLI")!==FALSE)
 {
@@ -32,7 +33,7 @@ header("Content-Type: text/html; charset=UTF-8");
 $sqlite=new sqlite_database($filename);
 if($sqlite)
 {
-    echo "connected to sqlite db".nl;
+    echo "connected to sqlite db (".$filename.")".nl;
     $query="SELECT * FROM sqlite_master WHERE type='table'";
     $result=$sqlite->execute($query);
     $tables=array();
@@ -45,10 +46,10 @@ if($sqlite)
             array_push($tables,$row['tbl_name']);
         }
     }
-    $mysql=new mysql_database($host,$user,$pass,$dbname);
+    $mysql=new mysql_database($host,$user,$pass,$dbname,$port);
     if($mysql)
     {
-        echo "connected to mysql".nl;
+        echo "connected to mysql (".$user.":".$pass."@".$host.":".$port."/".$dbname.")".nl;
         $drop=$mysql->drop();
         if($drop)
         {
@@ -81,10 +82,15 @@ if($sqlite)
                 {
                     echo "table ".$tablename." created".nl;
                     $table=new sqlite_table($tablename,$sqlite,$mysql);
+                    $expected=$table->num_rows();
                     $migrated=$table->migrateToMySQL();
                     if($migrated || is_numeric($migrated))
                     {
                         echo "table ".$tablename." migrated (".$migrated." Rows)".nl;
+                    }
+                    if($expected!=$migrated)
+                    {
+                        echo "ERROR: Expected ".$expected." Rows, but got ".$migrated." Rows!".nl;
                     }
                 }
                 else

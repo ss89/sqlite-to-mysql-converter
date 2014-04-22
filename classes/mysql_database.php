@@ -9,20 +9,20 @@
 class mysql_database
 {
     private $handle;
-    private $dbname;
-    function __construct($host,$user,$pass,$dbname)
+    private $dbname="";
+    function __construct($host,$user,$pass,$dbname,$port)
     {
-        $this->handle=mysqli_connect($host,$user,$pass);
+        $this->handle=mysqli_connect($host,$user,$pass,$this->dbname,$port);
         mysqli_query($this->handle,"SET NAMES UTF8");
         $this->dbname=$dbname;
     }
     function create()
     {
-        return mysqli_query($this->handle,"CREATE DATABASE ".$this->dbname." DEFAULT CHARACTER SET UTF8");
+        return mysqli_query($this->handle,"CREATE DATABASE `".$this->dbname."` DEFAULT CHARACTER SET UTF8");
     }
     function drop()
     {
-        return mysqli_query($this->handle,"DROP DATABASE IF EXISTS ".$this->dbname);
+        return mysqli_query($this->handle,"DROP DATABASE IF EXISTS `".$this->dbname."`");
     }
     function select()
     {
